@@ -19,9 +19,9 @@ class ContactData():
         self.delta_area = delta_area
 
 class FrameData():
-    def __init__(self, force_array):
+    def __init__(self, force_array, timestamp):
         self.force_array = force_array
-        self.timestamp = time.clock()
+        self.timestamp = timestamp
         self.contacts = []
     
     def append_contact(self, contact):
