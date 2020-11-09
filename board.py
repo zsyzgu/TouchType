@@ -94,5 +94,5 @@ class Board():
 
     def getFrameTime(self):
         if len(self.frames) >= 2:
-            return self.frames[-1].timestamp - self.frames[-2].timestamp
+            return round(self.frames[-1].timestamp - self.frames[-2].timestamp, 5)
         return 0
