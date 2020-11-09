@@ -14,6 +14,7 @@ class ReplayTask(TaskRenderer):
     def __init__(self):
         cv2.namedWindow('frame')
         cv2.setMouseCallback('frame', self._mouseCallback)
+        self.auto_play = False
         super().__init__()
 
     def __del__(self):
@@ -88,7 +89,7 @@ class ReplayTask(TaskRenderer):
                         break
 
     def startTask(self):
-        [task, word_begin_time, frames] = pickle.load(open('data/1_labeled.pickle', 'rb'))
+        [task, word_begin_time, frames] = pickle.load(open('data/1.pickle', 'rb'))
         self.task = task
         self.word_begin_time = word_begin_time
         self.frame_id = 0
@@ -108,6 +109,8 @@ class ReplayTask(TaskRenderer):
     
     def incFrame(self):
         if self.is_entering and self.frame_id + 1 < len(self.frames):
+            if len(self.frames[self.frame_id + 1].contacts) > len(self.frames[self.frame_id].contacts):
+                self.auto_play = False
             self.frame_id += 1
     
     def decFrame(self):
@@ -135,6 +138,9 @@ if __name__ == "__main__":
         if keyboard.is_pressed('left arrow') or keyboard.is_pressed('a'):
             replay_task.decFrame()
         if keyboard.is_pressed('right arrow') or keyboard.is_pressed('d'):
+            replay_task.auto_play = True # Should we auto_play?
+            replay_task.incFrame()
+        elif replay_task.auto_play:
             replay_task.incFrame()
         if keyboard.is_pressed_down('Enter'):
             if replay_task.is_entering: # End task and save
