@@ -21,7 +21,7 @@ class Board():
         self._openSensel()
         self._initFrame()
 
-    def __del__(self):
+    def stop(self):
         self._closeSensel()
 
     def _openSensel(self):
@@ -85,13 +85,6 @@ class Board():
             time.sleep(0.001)
         return self.frames[-1]
     
-    def get_frames_within(self, start_time, end_time):
-        frames = []
-        for frame in self.frames:
-            if start_time <= frame.timestamp and frame.timestamp <= end_time:
-                frames.append(frame)
-        return frames
-
     def getFrameTime(self):
         if len(self.frames) >= 2:
             return round(self.frames[-1].timestamp - self.frames[-2].timestamp, 5)
