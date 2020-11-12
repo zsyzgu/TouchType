@@ -109,15 +109,15 @@ class Replay():
         self.capture = cv2.VideoCapture('data/' + self.file_name + '.avi')
         self.screenshots = []
         self.timestamps = pickle.load(open('data/' + self.file_name + '.timestamp', 'rb'))
-        self.frames = compress_pickle.load('data/' + self.file_name + '.gz')
+        self.frames = compress_pickle.load('data/' + self.file_name + '_labeled.gz')
         self.frame_id = 0
         self.auto_play = False
 
     def stop(self):
         self.is_running = False
         file_path = 'data/' + self.file_name + '_labeled.gz'
+        DataManager().judgeFileExistance(file_path)
         compress_pickle.dump(self.frames, file_path)
-        # TODO: confirm if there exist a file
 
     def incFrame(self):
         if self.frame_id + 1 < len(self.frames):

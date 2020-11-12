@@ -8,6 +8,18 @@ class DataManager():
     def _print_usage(self):
         print('[Usage] python script.py folder/index')
 
+    def _file_exist_warning(self):
+        print('\033[1;31;40m[WARNING]\033[0m File exists. Still continue? [y/n]')
+        answer = input()
+        if len(answer) != 1:
+            self._file_exist_warning()
+        elif answer != 'y':
+            exit()
+
+    def judgeFileExistance(self, file_path):
+        if os.path.exists(file_path):
+            self._file_exist_warning()
+
     def getFileName(self):
         if len(sys.argv) != 2:
             self._print_usage()
@@ -27,13 +39,8 @@ class DataManager():
         files = os.listdir(root + folder)
         pres = [file.split('.')[0] for file in files]
         if (index in pres) and self.is_write:
-            print('\033[1;31;40m[WARNING]\033[0m Folder exists. Still continue? [y/n]')
-            answer = input()
-            if answer != 'y':
-                exit()
+            self._file_exist_warning()
 
         file_name = folder + '/' + index
         return file_name
 
-if __name__ == "__main__":
-    file_name = DataManager().getFileName()
