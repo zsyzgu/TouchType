@@ -2,4 +2,4 @@ sensel-lib-wrappers/
 data/
 __pycache__/
 *.pickle
-
+*.doc

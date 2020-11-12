@@ -52,7 +52,7 @@ class Board():
     
     def _sync(self):
         if len(self.frames) > 0:
-            while ((time.clock() - self.frames[-1].timestamp) * Board.FPS < 1):
+            while ((time.perf_counter() - self.frames[-1].timestamp) * Board.FPS < 1):
                 pass
 
     def _updateFrame(self):
@@ -62,7 +62,7 @@ class Board():
             (error, num_frames) = sensel.getNumAvailableFrames(self.handle)
             for i in range(num_frames):
                 self._sync()
-                timestamp = time.clock()
+                timestamp = time.perf_counter()
                 error = sensel.getFrame(self.handle, self._frame)
             R = self.info.num_rows
             C = self.info.num_cols

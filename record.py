@@ -11,7 +11,6 @@ import random
 from my_keyboard import MyKeyboard
 import multiprocessing
 
-
 def record_screen(is_end):
     FPS = 20
 
@@ -24,7 +23,7 @@ def record_screen(is_end):
         screenshot = ImageGrab.grab()
         frame = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
         video.write(frame)
-        timestamps.append(time.time())
+        timestamps.append(time.perf_counter())
     
     pickle.dump(timestamps, open('data/1.timestamp', 'wb'))
     video.release()

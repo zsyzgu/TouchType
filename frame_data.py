@@ -36,9 +36,12 @@ class FrameData():
         force_map = cv2.resize(self.force_array, (C * MAGNI, R * MAGNI)).astype(np.float32)
         force_map = cv2.cvtColor(force_map, cv2.COLOR_GRAY2BGR)
         for contact in self.contacts:
-            if contact.label == 1:
+            color = (0, 0, 0)
+            if contact.label == -1: # Unsure
+                color = (255, 0, 0)
+            if contact.label == 1: # Positive sample
                 color = (0, 255, 0)
-            else:
+            if contact.label == 0: # Negative sample
                 color = (0, 0, 255)
             cv2.circle(force_map, (int((contact.x * C + 0.5) * MAGNI), int((contact.y * R + 0.5) * MAGNI)), 4, color, -1)
         cv2.imshow('frame', force_map)
