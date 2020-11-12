@@ -5,18 +5,18 @@ import numpy as np
 import pickle
 import compress_pickle
 from PIL import ImageGrab
-from sklearn import svm
 from board import Board
 import random
 from my_keyboard import MyKeyboard
 import multiprocessing
+from data_manager import DataManager
 
-def record_screen(is_end):
+def record_screen(is_end, file_name):
     FPS = 20
 
     screenshot = ImageGrab.grab()
     H, W = screenshot.size
-    video = cv2.VideoWriter('data/1.avi', cv2.VideoWriter_fourcc(*'XVID'), FPS, (H, W))
+    video = cv2.VideoWriter('data/' + file_name + '.avi', cv2.VideoWriter_fourcc(*'XVID'), FPS, (H, W))
     timestamps = []
 
     while is_end.qsize() == 0:
@@ -25,11 +25,11 @@ def record_screen(is_end):
         video.write(frame)
         timestamps.append(time.perf_counter())
     
-    pickle.dump(timestamps, open('data/1.timestamp', 'wb'))
+    pickle.dump(timestamps, open('data/' + file_name + '.timestamp', 'wb'))
     video.release()
     print('Video released')
 
-def record_board(is_end):
+def record_board(is_end, file_name):
     board = Board()
 
     while is_end.qsize() == 0:
@@ -38,14 +38,15 @@ def record_board(is_end):
         print(board.getFrameTime())
     cv2.destroyAllWindows()
     
-    compress_pickle.dump(board.frames, 'data/1.gz')
+    compress_pickle.dump(board.frames, 'data/' + file_name + '.gz')
     board.stop()
     print('Board released')
 
 if __name__ == "__main__":
+    file_name = DataManager().getFileName()
     is_end = multiprocessing.Queue()
-    p1 = multiprocessing.Process(target=record_screen, args=(is_end,))
-    p2 = multiprocessing.Process(target=record_board, args=(is_end,))
+    p1 = multiprocessing.Process(target=record_screen, args=(is_end, file_name, ))
+    p2 = multiprocessing.Process(target=record_board, args=(is_end, file_name, ))
     p1.start()
     p2.start()
     

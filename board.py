@@ -4,12 +4,10 @@ import time
 import numpy as np
 import pickle
 import keyboard
-from sklearn import svm
 sys.path.append('./sensel-lib-wrappers/sensel-lib-python')
 import sensel
 from frame_data import FrameData
 from frame_data import ContactData
-from history import History
 import _thread
 
 class Board():

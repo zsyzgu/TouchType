@@ -10,6 +10,7 @@ import random
 import threading
 from my_keyboard import MyKeyboard
 from frame_data import FrameData
+from data_manager import DataManager
 
 class Replay():
     SCREENSHOT_W = 980
@@ -131,7 +132,8 @@ class Replay():
 
 if __name__ == "__main__":
     keyboard = MyKeyboard()
-    replay = Replay('1')
+    file_name = DataManager(is_write=False).getFileName()
+    replay = Replay(file_name)
     
     while True:
         frame_start_time = time.perf_counter()
