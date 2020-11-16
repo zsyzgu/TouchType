@@ -1,14 +1,17 @@
+import numpy as np
 import pickle
+import compress_pickle
 from frame_data import FrameData
 from frame_data import ContactData
-from sklearn import svm
-import numpy as np
+from data_manager import DataManager
+import os
+import sys
 import random
+from sklearn import svm
 from sklearn import tree
 from sklearn.model_selection import cross_val_score
 from scipy import stats
 from sklearn.preprocessing import StandardScaler
-import cv2
 
 class History():
     def __init__(self):
@@ -54,16 +57,17 @@ class History():
         ells = [float(contact.minor) / contact.major for contact in contacts[:term]]
         feature += self._getSequence(areas) + self._getSequence(forces) + self._getSequence(intens) + self._getSequence(ells) + self._getSequence(frac_areas) + self._getSequence(frac_forces)
         
-        #duration = self.timestamps[-1] - self.timestamps[-length]
-        #st_contacts_num = self.contacts_num[-length]
-        #en_contacts_num = self.contacts_num[-1]
-        #feature += [duration, st_contacts_num, en_contacts_num]
+        duration = self.timestamps[-1] - self.timestamps[-length]
+        st_contacts_num = self.contacts_num[-length]
+        en_contacts_num = self.contacts_num[-1]
+        feature += [duration, st_contacts_num, en_contacts_num]
 
         return feature
 
-def process(X, Y, frames, label):
+def input(user, session, X, Y, Z):
+    frames = compress_pickle.load('data/' + user + '/' + str(session) + '_labeled.gz')
+    
     history = History()
-
     for frame in frames:
         history.updateFrame(frame)
 
@@ -72,31 +76,40 @@ def process(X, Y, frames, label):
                 feature = history.getFeature(contact.id)
                 if len(feature) != 0:
                     X.append(feature)
-                    Y.append(label)
-
-def input(files):
-    frames = []
-    for file in files:
-        frames.extend(pickle.load(open('data/' + file + '.pickle', 'rb')))
-    return frames
+                    Y.append(contact.label)
+                    Z.append(user)
 
 if __name__ == "__main__":
-    users = 6
-    N_frames = input(['N_' + str(i) for i in range(1, users + 1)])
-    P_frames = input(['P_' + str(i) for i in range(1, users + 1)])
+    file_name = DataManager(is_write=False).getFileName()
+    tags = file_name.split('/')
 
+    if tags[0] != 'xxx':
+        users = [tags[0]]
+    else:
+        users = os.listdir('data/')
+
+    if tags[1] != 'x':
+        sessions = [int(tags[1])]
+    else:
+        sessions = [1, 2, 3, 4, 5]
+    
     X = []
     Y = []
-    process(X, Y, N_frames, 0)
-    process(X, Y, P_frames, 1)
-
+    Z = [] # users
+    for user in users:
+        for session in sessions:
+            input(user, session, X, Y, Z)
+    X = np.array(X)
+    Y = np.array(Y)
+    Z = np.array(Z)
+            
     scalar = StandardScaler()
     scalar.fit(X)
     X = scalar.transform(X)
 
     clf = svm.SVC(gamma='auto')
     #clf = tree.DecisionTreeClassifier(criterion='entropy')
-    print(len(Y))
-    print(np.mean(cross_val_score(clf, X, Y, cv=5)))
-    clf.fit(X, Y)
-    pickle.dump([scalar, clf], open('model.pickle', 'wb'))
+    # TODO: balance positive/negative samples
+    print('Positive samples = %d' % (np.sum(Y == 1)))
+    print('Negative samples = %d' % (np.sum(Y == 0)))
+    print('Accuracy = %f' % (np.mean(cross_val_score(clf, X, Y, cv=5))))

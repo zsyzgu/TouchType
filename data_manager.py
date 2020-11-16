@@ -32,14 +32,15 @@ class DataManager():
         index = tags[1]
 
         root = 'data/'
-        folders = os.listdir(root)
-        if folder not in folders:
-            os.mkdir(root + folder)
-        
-        files = os.listdir(root + folder)
-        pres = [file.split('.')[0] for file in files]
-        if (index in pres) and self.is_write:
-            self._file_exist_warning()
+        if self.is_write:
+            folders = os.listdir(root)
+            if folder not in folders:
+                os.mkdir(root + folder)
+            
+            files = os.listdir(root + folder)
+            pres = [file.split('.')[0] for file in files]
+            if index in pres:
+                self._file_exist_warning()
 
         file_name = folder + '/' + index
         return file_name
