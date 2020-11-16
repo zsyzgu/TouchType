@@ -113,3 +113,6 @@ if __name__ == "__main__":
     print('Positive samples = %d' % (np.sum(Y == 1)))
     print('Negative samples = %d' % (np.sum(Y == 0)))
     print('Accuracy = %f' % (np.mean(cross_val_score(clf, X, Y, cv=5))))
+
+    clf.fit(X, Y)
+    pickle.dump([scalar, clf], open('model.pickle', 'wb'))
