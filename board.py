@@ -20,7 +20,7 @@ class Board():
         self._initFrame()
 
     def stop(self):
-        self._closeSensel()
+        self.is_running = False
 
     def _openSensel(self):
         handle = None
@@ -38,7 +38,7 @@ class Board():
         self._frame = frame
         self.frames = []
         try:
-            _thread.start_new_thread(self._updateFrame, ())
+            _thread.start_new_thread(self._run, ())
         except:
             print("Thread Error")
 
@@ -53,7 +53,7 @@ class Board():
             while ((time.perf_counter() - self.frames[-1].timestamp) * Board.FPS < 1):
                 pass
 
-    def _updateFrame(self):
+    def _run(self):
         self.is_running = True
         while (self.is_running):
             error = sensel.readSensor(self.handle)
@@ -77,6 +77,8 @@ class Board():
                 contact = ContactData(c.id, c.state, x, y, c.area, c.total_force, c.major_axis, c.minor_axis, c.delta_x, c.delta_y, c.delta_force, c.delta_area)
                 frame.append_contact(contact)
             self.frames.append(frame)
+        
+        self._closeSensel()
 
     def getFrame(self):
         while (len(self.frames) == 0):

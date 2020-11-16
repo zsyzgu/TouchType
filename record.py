@@ -27,7 +27,7 @@ def record_screen(is_end, file_name):
     
     pickle.dump(timestamps, open('data/' + file_name + '.timestamp', 'wb'))
     video.release()
-    print('Video released')
+    print('Video released.', time.perf_counter())
 
 def record_board(is_end, file_name):
     board = Board()
@@ -35,25 +35,28 @@ def record_board(is_end, file_name):
     while is_end.qsize() == 0:
         frame = board.getFrame()
         frame.output()
-        print(board.getFrameTime())
+        #print(board.getFrameTime())
     cv2.destroyAllWindows()
     
-    compress_pickle.dump(board.frames, 'data/' + file_name + '.gz')
     board.stop()
-    print('Board released')
+    print('Board compressing.', time.perf_counter())
+    compress_pickle.dump(board.frames, 'data/' + file_name + '.gz')
+    print('Board released.', time.perf_counter())
 
 if __name__ == "__main__":
     file_name = DataManager().getFileName()
-    is_end = multiprocessing.Queue()
-    p1 = multiprocessing.Process(target=record_screen, args=(is_end, file_name, ))
-    p2 = multiprocessing.Process(target=record_board, args=(is_end, file_name, ))
+    is_end_1 = multiprocessing.Queue()
+    is_end_2 = multiprocessing.Queue()
+    p1 = multiprocessing.Process(target=record_screen, args=(is_end_1, file_name, ))
+    p2 = multiprocessing.Process(target=record_board, args=(is_end_2, file_name, ))
     p1.start()
     p2.start()
     
     keyboard = MyKeyboard()
     while True:
-        if keyboard.is_pressed('q'):
-            is_end.put(1)
+        if keyboard.is_pressed('Esc'):
+            is_end_1.put(1)
+            is_end_2.put(1)
             break
         time.sleep(0.05)
     

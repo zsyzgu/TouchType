@@ -3,7 +3,6 @@ import cv2
 import time
 import numpy as np
 import pickle
-import compress_pickle
 from sklearn import svm
 from board import Board
 import random
@@ -11,6 +10,7 @@ import threading
 from my_keyboard import MyKeyboard
 from frame_data import FrameData
 from data_manager import DataManager
+import compress_pickle
 
 class Replay():
     SCREENSHOT_W = 980
@@ -109,7 +109,7 @@ class Replay():
         self.capture = cv2.VideoCapture('data/' + self.file_name + '.avi')
         self.screenshots = []
         self.timestamps = pickle.load(open('data/' + self.file_name + '.timestamp', 'rb'))
-        self.frames = compress_pickle.load('data/' + self.file_name + '_labeled.gz')
+        self.frames = compress_pickle.load('data/' + self.file_name + '.gz')
         self.frame_id = 0
         self.auto_play = False
 
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     while True:
         frame_start_time = time.perf_counter()
 
-        if keyboard.is_pressed('q'):
+        if keyboard.is_pressed('Esc'):
             replay.is_running = False
             break    
         if keyboard.is_pressed('left arrow') or keyboard.is_pressed('a'):
