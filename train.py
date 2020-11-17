@@ -57,10 +57,10 @@ class History():
         ells = [float(contact.minor) / contact.major for contact in contacts[:term]]
         feature += self._getSequence(areas) + self._getSequence(forces) + self._getSequence(intens) + self._getSequence(ells) + self._getSequence(frac_areas) + self._getSequence(frac_forces)
         
-        duration = self.timestamps[-1] - self.timestamps[-length]
-        st_contacts_num = self.contacts_num[-length]
-        en_contacts_num = self.contacts_num[-1]
-        feature += [duration, st_contacts_num, en_contacts_num]
+        #duration = self.timestamps[-1] - self.timestamps[-length]
+        #st_contacts_num = self.contacts_num[-length]
+        #en_contacts_num = self.contacts_num[-1]
+        #feature += [duration, st_contacts_num, en_contacts_num]
 
         return feature
 
@@ -74,7 +74,7 @@ def input(user, session, X, Y, Z):
         for contact in frame.contacts:
             if len(history.contacts[contact.id]) == 5 or contact.state == 3:
                 feature = history.getFeature(contact.id)
-                if len(feature) != 0:
+                if len(feature) != 0 and contact.label != -1:
                     X.append(feature)
                     Y.append(contact.label)
                     Z.append(user)
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     if tags[1] != 'x':
         sessions = [int(tags[1])]
     else:
-        sessions = [1, 2, 3, 4, 5]
+        sessions = [1, 2, 3, 4]
     
     X = []
     Y = []

@@ -11,6 +11,7 @@ from my_keyboard import MyKeyboard
 import multiprocessing
 from data_manager import DataManager
 from train import History
+import pygame
 
 if __name__ == "__main__":
     board = Board()
@@ -19,6 +20,12 @@ if __name__ == "__main__":
     [scalar, clf] = pickle.load(open('model.pickle', 'rb'))
     labels = np.zeros(20)
 
+    pygame.mixer.init(22050, -16, 2, 64)
+    pygame.init()
+    sound = pygame.mixer.Sound("sound/type.wav")
+    sound.set_volume(1.0)
+
+    cnt = 0
     while True:
         if keyboard.is_pressed_down('Esc'):
             break
@@ -28,13 +35,14 @@ if __name__ == "__main__":
         for contact in frame.contacts:
             if contact.state == 1:
                 labels[contact.id] = 0
-            if len(history.contacts[contact.id]) == 5 or contact.state == 3:
+            if len(history.contacts[contact.id]) == 5 or (len(history.contacts[contact.id]) < 5 and contact.state == 3):
                 feature = history.getFeature(contact.id)
                 if len(feature) != 0:
                     feature = scalar.transform([feature])[0]
                     pred = clf.predict([feature])[0]
+                    if labels[contact.id] == 0 and pred == 1:
+                        sound.play()
                     labels[contact.id] = pred
-                    print(pred)
             contact.label = labels[contact.id]
 
         frame.output()
