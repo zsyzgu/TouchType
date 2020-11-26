@@ -37,6 +37,7 @@ class Board():
         error = sensel.startScanning(self.handle)
         self._frame = frame
         self.frames = []
+        self.updated = False
         try:
             _thread.start_new_thread(self._run, ())
         except:
@@ -77,12 +78,19 @@ class Board():
                 contact = ContactData(c.id, c.state, x, y, c.area, c.total_force, c.major_axis, c.minor_axis, c.delta_x, c.delta_y, c.delta_force, c.delta_area)
                 frame.append_contact(contact)
             self.frames.append(frame)
+            self.updated = True
         
         self._closeSensel()
 
     def getFrame(self):
         while (len(self.frames) == 0):
             time.sleep(0.001)
+        return self.frames[-1]
+    
+    def getNewFrame(self):
+        while self.updated == False:
+            time.sleep(0.001)
+        self.updated = False
         return self.frames[-1]
     
     def getFrameTime(self):
