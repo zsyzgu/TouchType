@@ -77,7 +77,7 @@ class History():
                 frac_delta_forces.append((max(0, curr_contact.force - last_contact.force)) / total_delta_force)
                 frac_delta_areas.append((max(0, curr_contact.area - last_contact.area)) / total_delta_area)
         feature += self._getSequence(frac_forces) + self._getSequence(frac_areas)
-        feature += self._getSequence(frac_delta_forces) + self._getSequence(frac_delta_areas)
+        #feature += self._getSequence(frac_delta_forces) + self._getSequence(frac_delta_areas)
 
         areas = [contact.area for contact in contacts]
         forces = [contact.force for contact in contacts]
@@ -128,7 +128,6 @@ def input(user, session):
         for contact in key_contacts:
             if contact.label != -1:
                 X.append(contact.feature)
-                print(len(contact.feature))
                 Y.append(contact.label)
                 Z.append(user)
     
@@ -179,6 +178,25 @@ if __name__ == "__main__":
     scalar.fit(X)
     X = scalar.transform(X)
 
+    '''
+    X_train = []
+    Y_train = []
+    X_test = []
+    Y_test = []
+    test_users = ['swn', 'plh', 'grc', 'hxz']
+    for x, y, z in zip(X, Y, Z):
+        if y != -1:
+            if z in test_users:
+                X_test.append(x)
+                Y_test.append(y)
+            else:
+                X_train.append(x)
+                Y_train.append(y)
+    clf = svm.SVC(gamma='auto', class_weight='balanced')
+    clf.fit(X_train, Y_train)
+    Y_pred = clf.predict(X_test)
+    print(float(sum(np.array(Y_test) == np.array(Y_pred))) / len(Y_test))
+    '''
     clf = svm.SVC(gamma='auto', class_weight='balanced')
     print('Positive samples = %d' % (np.sum(Y == 1)))
     print('Negative samples = %d' % (np.sum(Y == 0)))
