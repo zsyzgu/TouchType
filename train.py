@@ -49,35 +49,27 @@ class History():
             if contact.major == 0:
                 return []
 
+        '''
         frac_forces = []
         frac_areas = []
-        frac_delta_forces = []
-        frac_delta_areas = []
+        frac_intens = []
         for i in range(length):
             total_force = 0
             total_area = 0
-            total_delta_force = 1
-            total_delta_area = 1
+            total_inten = 0
             curr_contact = contacts[-length + i]
-            if i >= 1:
-                last_contact = contacts[-length + i - 1]
             for point in range(self.N):
                 other_contacts = self.contacts[point]
                 if length - i <= len(other_contacts):
                     other_contact = other_contacts[-length + i]
                     total_force += other_contact.force
                     total_area += other_contact.area
-                    if i >= 1 and (length - (i-1) <= len(other_contacts)):
-                        other_last_contact = other_contacts[-length + i - 1]
-                        total_delta_force += max(0, other_contact.force - other_last_contact.force)
-                        total_delta_area += max(0, other_contact.area - other_last_contact.area)
+                    total_inten += other_contact.force / other_contact.area
             frac_forces.append(curr_contact.force / total_force)
             frac_areas.append(curr_contact.area / total_area)
-            if i >= 1:
-                frac_delta_forces.append((max(0, curr_contact.force - last_contact.force)) / total_delta_force)
-                frac_delta_areas.append((max(0, curr_contact.area - last_contact.area)) / total_delta_area)
-        feature += self._getSequence(frac_forces) + self._getSequence(frac_areas)
-        #feature += self._getSequence(frac_delta_forces) + self._getSequence(frac_delta_areas)
+            frac_intens.append((curr_contact.force / curr_contact.area) / total_inten)
+        feature += self._getSequence(frac_forces) + self._getSequence(frac_areas) + self._getSequence(frac_intens)
+        '''
 
         areas = [contact.area for contact in contacts]
         forces = [contact.force for contact in contacts]
@@ -85,27 +77,25 @@ class History():
         ells = [float(contact.minor) / contact.major for contact in contacts]
         feature += self._getSequence(areas) + self._getSequence(forces) + self._getSequence(intens) + self._getSequence(ells)
 
-        delta_forces = [contacts[i].force - contacts[i-1].force for i in range(1, len(contacts))]
-        delta_areas = [contacts[i].area - contacts[i-1].area for i in range(1, len(contacts))]
-        feature += self._getSequence(delta_forces) + self._getSequence(delta_areas)
+        dist2edge = [min(min(contact.x, 1-contact.x),min(contact.y, 1-contact.y)) for contact in contacts]
+        feature += self._getSequence(dist2edge)
 
-        xs = [contact.x for contact in contacts]
-        ys = [contact.y for contact in contacts]
-        feature += self._getSequence(xs) + self._getSequence(ys)
-
-        dxs = [contacts[i].x - contacts[0].x for i in range(len(contacts))]
-        dys = [contacts[i].y - contacts[0].y for i in range(len(contacts))]
-        feature += self._getSequence(dxs) + self._getSequence(dys)
+        dist2click = [((contacts[i].x-contacts[0].x)**2+(contacts[i].y-contacts[0].y)**2)**0.5 for i in range(len(contacts))]
+        feature += self._getSequence(dist2click)
 
         return feature
     
     def getKeyContact(self, frame): # Return contacts which are right to judge (5 frames or the end).
         # Each 'contact' add a member variable 'feature'
-        DELAY = 5 # in frames
+        DELAY_L = 5 # in frames
+        DELAY_R = 10
         contacts = []
 
         for contact in frame.contacts:
-            if len(self.contacts[contact.id]) == DELAY or (len(self.contacts[contact.id]) < DELAY and contact.state == 3):
+            duration = len(self.contacts[contact.id])
+            #if duration == DELAY or (duration < DELAY and contact.state == 3):
+            #if (DELAY_L <= duration and duration <= DELAY_R) or (duration < DEAY_L and contact.state == 3):
+            if contact.state == 3:
                 feature = self.getFeature(contact.id)
                 if len(feature) != 0:
                     contact.feature = feature
@@ -178,24 +168,29 @@ if __name__ == "__main__":
     scalar.fit(X)
     X = scalar.transform(X)
 
-    '''
-    X_train = []
-    Y_train = []
-    X_test = []
-    Y_test = []
-    test_users = ['swn', 'plh', 'grc', 'hxz']
-    for x, y, z in zip(X, Y, Z):
-        if y != -1:
-            if z in test_users:
-                X_test.append(x)
-                Y_test.append(y)
-            else:
-                X_train.append(x)
-                Y_train.append(y)
-    clf = svm.SVC(gamma='auto', class_weight='balanced')
-    clf.fit(X_train, Y_train)
-    Y_pred = clf.predict(X_test)
-    print(float(sum(np.array(Y_test) == np.array(Y_pred))) / len(Y_test))
+    users = os.listdir('data/')
+    accs = []
+    for test_id in range(len(users)):
+        X_train = []
+        Y_train = []
+        X_test = []
+        Y_test = []
+        for x, y, z in zip(X, Y, Z):
+            if y != -1:
+                if z == users[test_id]:
+                    X_test.append(x)
+                    Y_test.append(y)
+                else:
+                    X_train.append(x)
+                    Y_train.append(y)
+        clf = svm.SVC(gamma='auto', class_weight='balanced')
+        clf.fit(X_train, Y_train)
+        Y_pred = clf.predict(X_test)
+        acc = float(sum(np.array(Y_test) == np.array(Y_pred))) / len(Y_test)
+        print(users[test_id], acc)
+        accs.append(acc)
+    print('Total Acc =', np.mean(accs), np.std(accs))
+    
     '''
     clf = svm.SVC(gamma='auto', class_weight='balanced')
     print('Positive samples = %d' % (np.sum(Y == 1)))
@@ -206,3 +201,4 @@ if __name__ == "__main__":
 
     clf.fit(X, Y)
     pickle.dump([scalar, clf], open('model.pickle', 'wb'))
+    '''

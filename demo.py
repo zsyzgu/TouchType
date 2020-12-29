@@ -10,7 +10,7 @@ import random
 from my_keyboard import MyKeyboard
 import multiprocessing
 from data_manager import DataManager
-from train import History
+from train2 import History
 import pygame
 
 if __name__ == "__main__":
