@@ -73,10 +73,9 @@ class History():
                     break
             if key_contact == None:
                 break
-            if key_contact.state == 1:
-                st -= 1
-                break
             st -= 1
+            if key_contact.state == 1:
+                break
         while (en + 1 < len(self.frames)):
             key_contact = None
             for contact in self.frames[en + 1].contacts:
@@ -85,10 +84,9 @@ class History():
                     break
             if key_contact == None:
                 break
-            if key_contact.state == 3:
-                en += 1
-                break
             en += 1
+            if key_contact.state == 3:
+                break
         contacts = []
         for t in range(st, en + 1):
             key_contact = None
@@ -98,6 +96,14 @@ class History():
                     break
             contacts.append(key_contact)
         return st, en, contacts
+
+    def completeTaps(self, taps, length):
+        no_tap = [0, 0, 0, 0, 0, 0]
+        if len(taps) > length:
+            taps = taps[:length]
+        while len(taps) < length:
+            taps.append(no_tap)
+        return taps
 
     def getFeature(self, id):
         st, en, contacts = self.getContact(len(self.frames)-1, id)
@@ -113,68 +119,52 @@ class History():
         intens = [contact.force / contact.area for contact in contacts]
         ells = [float(contact.minor) / contact.major for contact in contacts]
         feature += self._getSequence(areas) + self._getSequence(forces) + self._getSequence(intens) + self._getSequence(ells)
-
-        frac_areas = [contacts[i].area / self.total_areas[st+i] for i in range(len(contacts))]
-        frac_forces = [contacts[i].force / self.total_forces[st+i] for i in range(len(contacts))]
-        frac_intens = [(contacts[i].force / contacts[i].area) / self.total_intens[st+i] for i in range(len(contacts))]
-        feature += self._getSequence(frac_areas) + self._getSequence(frac_forces) + self._getSequence(frac_intens)
         
         dist2edge = [min(min(contact.x, 1-contact.x),1-contact.y) for contact in contacts]
         dist2click = [((contacts[i].x-contacts[0].x)**2+(contacts[i].y-contacts[0].y)**2)**0.5 for i in range(len(contacts))]
         dist2corner = [min((contact.x-0)**2+(contact.y-1)**2, (contact.x-1)**2+(contact.y-1)**2)**0.5 for contact in contacts]
         feature += self._getSequence(dist2edge) + self._getSequence(dist2corner) + self._getSequence(dist2click)
 
+        frac_areas = [contacts[i].area / self.total_areas[st+i] for i in range(len(contacts))]
+        frac_forces = [contacts[i].force / self.total_forces[st+i] for i in range(len(contacts))]
+        frac_intens = [(contacts[i].force / contacts[i].area) / self.total_intens[st+i] for i in range(len(contacts))]
+        feature += self._getSequence(frac_areas) + self._getSequence(frac_forces) + self._getSequence(frac_intens)
+
         other_taps = []
-        for t in range(en-1, max(st-int(3*Board.FPS),0)-1, -1):
+        for t in range(en-1, max(st-int(5*Board.FPS),0)-1, -1):
             for contact in self.frames[t].contacts:
                 if contact.state == 1 and not (t == st and contact.id == id) and len(other_taps) < 10: # whether the start of another contact
                     S, E, C = self.getContact(t, contact.id)
-                    other_feature = []
-                    other_feature.append(float(S - st) / 50)
-                    other_feature.append(float(E - st) / 50)
-                    other_feature.append(np.mean([((c.x-contacts[-1].x)**2+(c.y-contacts[-1].y)**2)**0.5 for c in C]))
-                    other_feature.append(np.mean([c.force for c in C]))
-                    other_feature.append(np.mean([c.area for c in C]))
-                    other_feature.append(np.mean([c.force / c.area for c in C]))
-                    other_taps.append(np.array(other_feature))
+                    st_time = float(S - st) / 50
+                    en_time = float(E - st) / 50
+                    dist = np.mean([((c.x-contacts[-1].x)**2+(c.y-contacts[-1].y)**2)**0.5 for c in C])
+                    force = np.mean([c.force for c in C])/np.mean(forces)
+                    area = np.mean([c.area for c in C])/np.mean(areas)
+                    inten = np.mean([c.force / c.area for c in C])/np.mean(ells)
+                    other_taps.append([st_time, en_time, dist, force, area, inten])
         
-        no_tap = [0, 0, 0, 0, 0, 0]
         pre_taps = [tap for tap in other_taps if tap[0] < 0] # Add 5 pre taps
         pre_taps.reverse()
-        if len(pre_taps) > 5:
-            pre_taps = pre_taps[:5]
-        while len(pre_taps) < 5:
-            pre_taps.append(no_tap)
-        feature.extend(np.array(pre_taps).flatten())
-
+        feature.extend(np.array(self.completeTaps(pre_taps, 5)).flatten())
         post_taps = [tap for tap in other_taps if tap[0] > 0] # Add 2 post taps
-        if len(post_taps) > 2:
-            post_taps = post_taps[:2]
-        while len(post_taps) < 2:
-            post_taps.append(no_tap)
-        feature.extend(np.array(post_taps).flatten())
-
+        feature.extend(np.array(self.completeTaps(post_taps, 2)).flatten())
         close_taps = [tap for tap in other_taps if tap[1] >= 0] # Add 3 closest taps during this tap
         close_taps.sort(key=lambda tap: tap[2])
-        if len(close_taps) > 3:
-            close_taps = close_taps[:3]
-        while len(close_taps) < 3:
-            close_taps.append(no_tap)
-        feature.extend(np.array(close_taps).flatten())
+        feature.extend(np.array(self.completeTaps(close_taps, 2)).flatten())
 
         return feature
     
     def getKeyContact(self, frame): # Return contacts which are right to judge (5 frames or the end).
-        # Each 'contact' add a member variable 'feature'
+        # Each 'contact' add member variables 'feature', 'duration'
         D1, D2 = 3, 5 # in frames
         contacts = []
 
         for contact in frame.contacts:
             duration = len(self.frames) - self.start_frame[contact.id]
             if (D1 <= duration and duration <= D2) or (duration < D1 and contact.state == 3):
-            #if (D2 == duration) or (duration < D2 and contact.state == 3):
                 feature = self.getFeature(contact.id)
                 if len(feature) != 0:
+                    contact.duration = duration
                     contact.feature = feature
                     contacts.append(contact)
 
