@@ -9,7 +9,7 @@ import random
 from my_keyboard import MyKeyboard
 import multiprocessing
 from data_manager import DataManager
-from train2 import History
+from train import History
 import pygame
 from pynput.keyboard import Key, Controller
 
@@ -96,7 +96,7 @@ if __name__ == "__main__":
     board = Board()
     keyboard = MyKeyboard()
     history = History()
-    [scalar, clf] = pickle.load(open('model.pickle', 'rb'))
+    [scalar, clf] = pickle.load(open('model/tap.model', 'rb'))
     labels = np.zeros(20)
 
     pygame.mixer.init(22050, -16, 2, 64)

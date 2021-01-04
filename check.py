@@ -114,7 +114,7 @@ class Replay():
         self.frame_id = 0
         self.auto_play = False
         self.history = History()
-        [self.scalar, self.clf] = pickle.load(open('model.pickle', 'rb'))
+        [self.scalar, self.clf] = pickle.load(open('model/tap.model', 'rb'))
 
     def stop(self):
         self.is_running = False

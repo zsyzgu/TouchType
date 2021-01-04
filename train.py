@@ -259,4 +259,4 @@ if __name__ == "__main__":
 
     clf = svm.SVC(gamma='auto', class_weight='balanced')
     clf.fit(X, Y)
-    pickle.dump([scalar, clf], open('model.pickle', 'wb'))
+    pickle.dump([scalar, clf], open('model/tap.model', 'wb'))
