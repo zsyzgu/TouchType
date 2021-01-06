@@ -120,10 +120,11 @@ class History():
         ells = [float(contact.minor) / contact.major for contact in contacts]
         feature += self._getSequence(areas) + self._getSequence(forces) + self._getSequence(intens) + self._getSequence(ells)
         
-        dist2edge = [min(min(contact.x, 1-contact.x),1-contact.y) for contact in contacts]
+        #dist2edge = [min(min(contact.x, 1-contact.x),1-contact.y) for contact in contacts]
         dist2click = [((contacts[i].x-contacts[0].x)**2+(contacts[i].y-contacts[0].y)**2)**0.5 for i in range(len(contacts))]
         dist2corner = [min((contact.x-0)**2+(contact.y-1)**2, (contact.x-1)**2+(contact.y-1)**2)**0.5 for contact in contacts]
-        feature += self._getSequence(dist2edge) + self._getSequence(dist2corner) + self._getSequence(dist2click)
+        #feature += self._getSequence(dist2edge) + self._getSequence(dist2corner) + self._getSequence(dist2click)
+        feature += self._getSequence(dist2corner) + self._getSequence(dist2click)
 
         frac_areas = [contacts[i].area / self.total_areas[st+i] for i in range(len(contacts))]
         frac_forces = [contacts[i].force / self.total_forces[st+i] for i in range(len(contacts))]
@@ -156,7 +157,7 @@ class History():
     
     def getKeyContact(self, frame): # Return contacts which are right to judge (5 frames or the end).
         # Each 'contact' add member variables 'feature', 'duration'
-        D1, D2 = 3, 5 # in frames
+        D1, D2 = 5, 5 # in frames
         contacts = []
 
         for contact in frame.contacts:
@@ -257,6 +258,7 @@ if __name__ == "__main__":
         accs.append(acc)
     print('Total Acc =', np.mean(accs), np.std(accs))
 
-    clf = svm.SVC(gamma='auto', class_weight='balanced')
+    #clf = svm.SVC(gamma='auto', class_weight='balanced')
+    clf = svm.SVC(gamma='auto')
     clf.fit(X, Y)
     pickle.dump([scalar, clf], open('model/tap.model', 'wb'))
