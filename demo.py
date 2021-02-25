@@ -35,15 +35,29 @@ if __name__ == "__main__":
         frame = board.getNewFrame()
         history.updateFrame(frame)
         
+        # key_contacts = history.getKeyContact(frame)
+        # for contact in key_contacts:
+        #     feature = scalar.transform([contact.feature])[0]
+        #     pred = clf.predict([feature])[0]
+        #     if labels[contact.id] == None and pred == 1:
+        #         sound.play()
+        #         key = qwerty.decode(contact.x, contact.y)
+        #         controller.press(key)
+        #         labels[contact.id] = key
         key_contacts = history.getKeyContact(frame)
-        for contact in key_contacts:
-            feature = scalar.transform([contact.feature])[0]
-            pred = clf.predict([feature])[0]
-            if labels[contact.id] == None and pred == 1:
-                sound.play()
-                key = qwerty.decode(contact.x, contact.y)
-                controller.press(key)
-                labels[contact.id] = key
+        key_contacts = [contact for contact in key_contacts if labels[contact.id] == None]
+        if len(key_contacts) > 0:
+            features = [contact.feature for contact in key_contacts]
+            features = scalar.transform(features)
+            preds = clf.predict(features)
+            j = 0
+            for contact in key_contacts:
+                if preds[j]:
+                    sound.play()
+                    key = qwerty.decode(contact.x, contact.y)
+                    controller.press(key)
+                    labels[contact.id] = key
+                j += 1
 
         for contact in frame.contacts:
             if contact.state == 1:

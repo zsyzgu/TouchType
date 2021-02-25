@@ -17,6 +17,7 @@ import time
 import multiprocessing
 from board import Board
 import pandas as pd
+import matplotlib.pyplot as plt
 
 class History():
     def __init__(self):
@@ -30,7 +31,6 @@ class History():
     def _getSequence(self, X):
         # a Faster Implementation of: return [np.mean(X), np.std(X), np.min(X), np.max(X), stats.skew(X), stats.kurtosis(X)]
         niu = np.mean(X)
-        std = np.std(X)
         minX = np.min(X)
         maxX = np.max(X)
         niu2 = np.mean([x**2 for x in X])
@@ -43,7 +43,7 @@ class History():
             niu4 = np.mean([(x-niu)**4 for x in X])
             skew = skew =(niu3-3*niu*sigma**2-niu**3)/(sigma**3)
             kurt=niu4/(sigma**4)-3
-        return [niu, std, minX, maxX, skew, kurt]
+        return [niu, minX, maxX, skew, kurt]
 
     def updateFrame(self, frame):
         self.frames.append(frame)
@@ -103,6 +103,8 @@ class History():
             taps = taps[:length]
         while len(taps) < length:
             taps.append(no_tap)
+        for i in range(len(taps)):
+            taps[i] = taps[i][:-1]
         return taps
 
     def getFeature(self, id):
@@ -115,43 +117,42 @@ class History():
         feature = []
 
         areas = [contact.area for contact in contacts]
+        ells = [float(contact.minor) / contact.major for contact in contacts]
+        displacement = [((contact.x-contacts[0].x)**2+(contact.y-contacts[0].y)**2)**0.5 for contact in contacts]
+        feature += self._getSequence(areas) + self._getSequence(ells) + self._getSequence(displacement)
+
         forces = [contact.force for contact in contacts]
         intens = [contact.force / contact.area for contact in contacts]
-        ells = [float(contact.minor) / contact.major for contact in contacts]
-        feature += self._getSequence(areas) + self._getSequence(forces) + self._getSequence(intens) + self._getSequence(ells)
-        
-        #dist2edge = [min(min(contact.x, 1-contact.x),1-contact.y) for contact in contacts]
-        dist2click = [((contacts[i].x-contacts[0].x)**2+(contacts[i].y-contacts[0].y)**2)**0.5 for i in range(len(contacts))]
-        dist2corner = [min((contact.x-0)**2+(contact.y-1)**2, (contact.x-1)**2+(contact.y-1)**2)**0.5 for contact in contacts]
-        #feature += self._getSequence(dist2edge) + self._getSequence(dist2corner) + self._getSequence(dist2click)
-        feature += self._getSequence(dist2corner) + self._getSequence(dist2click)
+        feature += self._getSequence(forces) + self._getSequence(intens) 
 
         frac_areas = [contacts[i].area / self.total_areas[st+i] for i in range(len(contacts))]
         frac_forces = [contacts[i].force / self.total_forces[st+i] for i in range(len(contacts))]
         frac_intens = [(contacts[i].force / contacts[i].area) / self.total_intens[st+i] for i in range(len(contacts))]
         feature += self._getSequence(frac_areas) + self._getSequence(frac_forces) + self._getSequence(frac_intens)
+        
+        dist2edges = [min(1-contact.y,min(contact.x, 1-contact.x)) for contact in contacts]
+        dist2corners = [min(contact.x**2+(1-contact.y)**2, (1-contact.x)**2+(1-contact.y)**2)**0.5 for contact in contacts]
+        feature += self._getSequence(dist2edges) + self._getSequence(dist2corners)
 
         other_taps = []
         for t in range(en-1, max(st-int(5*Board.FPS),0)-1, -1):
             for contact in self.frames[t].contacts:
                 if contact.state == 1 and not (t == st and contact.id == id) and len(other_taps) < 10: # whether the start of another contact
                     S, E, C = self.getContact(t, contact.id)
-                    st_time = float(S - st) / 50
-                    en_time = float(E - st) / 50
+                    st_time = float(S - st) / Board.FPS
                     dist = np.mean([((c.x-contacts[-1].x)**2+(c.y-contacts[-1].y)**2)**0.5 for c in C])
                     force = np.mean([c.force for c in C])/np.mean(forces)
                     area = np.mean([c.area for c in C])/np.mean(areas)
-                    inten = np.mean([c.force / c.area for c in C])/np.mean(ells)
-                    other_taps.append([st_time, en_time, dist, force, area, inten])
+                    inten = np.mean([c.force / c.area for c in C])/np.mean(intens)
+                    en_time = float(E - st) / Board.FPS
+                    other_taps.append([st_time, dist, force, area, inten, en_time])
         
         pre_taps = [tap for tap in other_taps if tap[0] < 0] # Add 5 pre taps
         pre_taps.reverse()
         feature.extend(np.array(self.completeTaps(pre_taps, 5)).flatten())
-        post_taps = [tap for tap in other_taps if tap[0] > 0] # Add 2 post taps
-        feature.extend(np.array(self.completeTaps(post_taps, 2)).flatten())
-        close_taps = [tap for tap in other_taps if tap[1] >= 0] # Add 3 closest taps during this tap
-        close_taps.sort(key=lambda tap: tap[2])
-        feature.extend(np.array(self.completeTaps(close_taps, 2)).flatten())
+        close_taps = [tap for tap in other_taps if tap[-1] >= 0] # Add 5 closest taps during this tap
+        close_taps.sort(key=lambda tap: tap[1])
+        feature.extend(np.array(self.completeTaps(close_taps, 5)).flatten())
 
         return feature
     
@@ -256,9 +257,10 @@ if __name__ == "__main__":
         acc = float(sum(np.array(Y_test) == np.array(Y_pred))) / len(Y_test)
         print(users[test_id], acc)
         accs.append(acc)
-    print('Total Acc =', np.mean(accs), np.std(accs))
+        #if users[test_id] == 'xcn':
+        #    pickle.dump([scalar, clf], open('model/tap.model', 'wb'))
+    print('Error Rate =', 1.0 - np.mean(accs), np.std(accs))
 
-    #clf = svm.SVC(gamma='auto', class_weight='balanced')
-    clf = svm.SVC(gamma='auto')
+    clf = svm.SVC(gamma='auto', class_weight='balanced')
     clf.fit(X, Y)
     pickle.dump([scalar, clf], open('model/tap.model', 'wb'))
